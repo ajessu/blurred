@@ -10,7 +10,7 @@ import Cocoa
 import SwiftUI
 import HotKey
 
-@NSApplicationMain
+@main
 class AppDelegate: NSObject, NSApplicationDelegate {
     let statusBarController = StatusBarController()
     
@@ -50,7 +50,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func openPrefWindowIfNeeded() {
         if UserDefaults.isOpenPrefWhenOpenApp {
             PreferencesWindowController.shared.window?.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
+            if #available(macOS 14.0, *) {
+                NSApp.activate()
+            } else {
+                NSApp.activate(ignoringOtherApps: true)
+            }
         }
     }
     

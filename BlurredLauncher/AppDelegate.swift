@@ -9,7 +9,7 @@
 import Cocoa
 
 
-@NSApplicationMain
+@main
 class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func terminate() {
@@ -34,7 +34,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let appName = "Blurred"
             components.append(appName) //main app name
             let newPath = NSString.path(withComponents: components)
-            NSWorkspace.shared.launchApplication(newPath)
+            let appURL = URL(fileURLWithPath: newPath)
+            let config = NSWorkspace.OpenConfiguration()
+            NSWorkspace.shared.openApplication(at: appURL, configuration: config)
         }
         else {
             self.terminate()

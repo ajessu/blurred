@@ -11,16 +11,29 @@ import Foundation
 import ServiceManagement
 
 enum Util {
-    static func setUpAutoStart(isAutoStart:Bool) {
-        let launcherAppId = "foundation.dwarves.blurredlauncher"
-        let runningApps = NSWorkspace.shared.runningApplications
-        let isRunning = !runningApps.filter { $0.bundleIdentifier == launcherAppId }.isEmpty
-        
-        SMLoginItemSetEnabled(launcherAppId as CFString, isAutoStart)
-        
-        if isRunning {
-            DistributedNotificationCenter.default().post(name: Notification.Name("killLauncher"),
-                                                         object: Bundle.main.bundleIdentifier!)
+    static func setUpAutoStart(isAutoStart: Bool) {
+        if #available(macOS 13.0, *) {
+            let service = SMAppService.mainApp
+            do {
+                if isAutoStart {
+                    try service.register()
+                } else {
+                    try service.unregister()
+                }
+            } catch {
+                print("Failed to \(isAutoStart ? "register" : "unregister") login item: \(error)")
+            }
+        } else {
+            let launcherAppId = "foundation.dwarves.blurredlauncher"
+            let runningApps = NSWorkspace.shared.runningApplications
+            let isRunning = !runningApps.filter { $0.bundleIdentifier == launcherAppId }.isEmpty
+            
+            SMLoginItemSetEnabled(launcherAppId as CFString, isAutoStart)
+            
+            if isRunning {
+                DistributedNotificationCenter.default().post(name: Notification.Name("killLauncher"),
+                                                             object: Bundle.main.bundleIdentifier!)
+            }
         }
     }
 }
