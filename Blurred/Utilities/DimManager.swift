@@ -105,10 +105,10 @@ extension DimManager {
             // Get frontmost window of each screen
             let newScreen = NSRect(x: screen.frame.minX, y: NSScreen.screens[0].frame.maxY - screen.frame.maxY, width: screen.frame.width, height: screen.frame.height)
             let windowInfo = windowInfos.first(where: {
-                return  newScreen.minX <= $0.bounds!.midX &&
-                    newScreen.maxX >= $0.bounds!.midX &&
-                    newScreen.minY <= $0.bounds!.midY &&
-                    newScreen.maxY >= $0.bounds!.midY
+                return  newScreen.minX <= $0.bounds.midX &&
+                    newScreen.maxX >= $0.bounds.midX &&
+                    newScreen.minY <= $0.bounds.midY &&
+                    newScreen.maxY >= $0.bounds.midY
             })
             
             windowNumber = windowInfo?.number ?? 0
@@ -129,8 +129,8 @@ extension DimManager {
     private func getWindowInfos() -> [WindowInfo] {
         let options = CGWindowListOption([.excludeDesktopElements, .optionOnScreenOnly])
         let windowsListInfo = CGWindowListCopyWindowInfo(options, CGWindowID(0))
-        let infoList = windowsListInfo as! [[String:Any]]
-        let windowInfos = infoList.map { WindowInfo.init(dict: $0) }.filter { $0.layer == 0 } // Filter out all the other item like Status Bar icon.
+        let infoList = windowsListInfo as? [[String: Any]] ?? []
+        let windowInfos = infoList.compactMap { WindowInfo(dict: $0) }.filter { $0.layer == 0 }
         return windowInfos
     }
 }

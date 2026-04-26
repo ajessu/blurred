@@ -15,7 +15,7 @@ import Cocoa
 struct WindowInfo {
     var alpha: Double
     var backingLocationVideoMemory: Bool?
-    var bounds: CGRect?
+    var bounds: CGRect
     var isOnScreen: Bool?
     var layer: Int
     var memoryUsage: Double
@@ -28,20 +28,38 @@ struct WindowInfo {
 }
 
 extension WindowInfo {
-    init(dict: [String: Any]) {
-        alpha = dict["kCGWindowAlpha"] as! Double
-        backingLocationVideoMemory = dict["CGWindowBackingLocationVideoMemory"] as? Bool
-        let boundsDict =  dict["kCGWindowBounds"] as! CFDictionary
-        bounds = CGRect(dictionaryRepresentation: boundsDict)
-        isOnScreen = dict["kCGWindowIsOnscreen"] as? Bool
-        layer = dict["kCGWindowLayer"] as! Int
-        memoryUsage = dict["kCGWindowMemoryUsage"] as! Double
-        name = dict["kCGWindowName"] as? String
-        number = dict["kCGWindowNumber"] as! Int
-        ownerName = dict["kCGWindowOwnerName"] as? String
-        ownerPID = dict["kCGWindowOwnerPID"] as! Int
-        sharingState = dict["kCGWindowSharingState"] as! Int
-        storeType = dict["kCGWindowStoreType"] as! Int
+    init?(dict: [String: Any]) {
+        guard
+            let alpha = dict["kCGWindowAlpha"] as? Double,
+            let boundsDict = dict["kCGWindowBounds"] as? NSDictionary,
+            let bounds = CGRect(dictionaryRepresentation: boundsDict),
+            let layer = dict["kCGWindowLayer"] as? Int,
+            let number = dict["kCGWindowNumber"] as? Int,
+            let ownerPID = dict["kCGWindowOwnerPID"] as? Int,
+            let sharingState = dict["kCGWindowSharingState"] as? Int,
+            let storeType = dict["kCGWindowStoreType"] as? Int
+        else {
+            #if DEBUG
+            print("WindowInfo: dropped window – missing required field in \(dict)")
+            #endif
+            return nil
+        }
+
+        self.alpha = alpha
+        self.bounds = bounds
+        self.layer = layer
+        // memoryUsage is optional per Apple docs despite being listed under
+        // "required" keys — default to 0 so we don't drop valid windows.
+        self.memoryUsage = (dict["kCGWindowMemoryUsage"] as? NSNumber)?.doubleValue ?? 0
+        self.number = number
+        self.ownerPID = ownerPID
+        self.sharingState = sharingState
+        self.storeType = storeType
+
+        self.backingLocationVideoMemory = dict["CGWindowBackingLocationVideoMemory"] as? Bool
+        self.isOnScreen = dict["kCGWindowIsOnscreen"] as? Bool
+        self.name = dict["kCGWindowName"] as? String
+        self.ownerName = dict["kCGWindowOwnerName"] as? String
     }
 }
 
