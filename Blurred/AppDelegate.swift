@@ -13,6 +13,7 @@ import HotKey
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {
     let statusBarController = StatusBarController()
+    var spaceObserver: Any?
     
     var hotKey: HotKey? {
         didSet {
@@ -31,11 +32,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func applicationDidFinishLaunching(_ aNotification: Notification) {
+        checkScreenRecordingPermission()
         hideDockIcon()
         setupAutoStartAtLogin()
         openPrefWindowIfNeeded()
         setupHotKey()
         eventMonitor.start()
+        observeSpaceChanges()
     }
     
     func applicationDidChangeScreenParameters(_ notification: Notification) {
@@ -65,5 +68,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func hideDockIcon() {
         NSApp.setActivationPolicy(.accessory)
+    }
+
+    func checkScreenRecordingPermission() {
+        if !CGPreflightScreenCaptureAccess() {
+            CGRequestScreenCaptureAccess()
+        }
+    }
+
+    func observeSpaceChanges() {
+        spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.activeSpaceDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            DimManager.sharedInstance.dim(runningApplication: NSWorkspace.shared.frontmostApplication)
+        }
     }
 }
