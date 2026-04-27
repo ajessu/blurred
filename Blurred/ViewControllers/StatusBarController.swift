@@ -20,6 +20,7 @@ class StatusBarController{
     init() {
         setupView()
         setupSlider()
+        observePermissionState()
     }
     
     private func setupView() {
@@ -91,9 +92,23 @@ class StatusBarController{
         menu.addItem(enableButton)
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Preferences...".localized, action: #selector(openPreferences), keyEquivalent: "P"))
+
+        // Permission warning (hidden by default, shown when Screen Recording is denied)
+        let permSeparator = NSMenuItem.separator()
+        permSeparator.tag = 998
+        permSeparator.isHidden = true
+        menu.addItem(permSeparator)
+
+        let permItem = NSMenuItem(title: "⚠️ Screen Recording permission required".localized, action: #selector(openScreenRecordingSettings), keyEquivalent: "")
+        permItem.tag = 999
+        permItem.target = self
+        permItem.isHidden = true
+        menu.addItem(permItem)
+
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Quit".localized, action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         menu.item(withTitle: "Preferences...".localized)?.target = self
+
         return menu
     }
     
@@ -108,5 +123,25 @@ class StatusBarController{
         } else {
             NSApp.activate(ignoringOtherApps: true)
         }
+    }
+
+    private func observePermissionState() {
+        DimManager.sharedInstance.$hasScreenRecordingPermission
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] granted in
+                self?.updatePermissionStatus(granted)
+            }
+            .store(in: &cancellableSet)
+    }
+
+    private func updatePermissionStatus(_ granted: Bool) {
+        guard let menu = menuStatusItem.menu else { return }
+        menu.item(withTag: 998)?.isHidden = granted
+        menu.item(withTag: 999)?.isHidden = granted
+    }
+
+    @objc private func openScreenRecordingSettings() {
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") else { return }
+        NSWorkspace.shared.open(url)
     }
 }
