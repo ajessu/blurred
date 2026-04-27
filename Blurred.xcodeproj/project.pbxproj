@@ -37,6 +37,8 @@
 		B32C8D992498E837003562C9 /* String+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = B32C8D982498E837003562C9 /* String+Extension.swift */; };
 		AA0000012700000000000002 /* WindowEnumerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000012700000000000001 /* WindowEnumerator.swift */; };
 		AA0000012700000000000004 /* WindowSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000012700000000000003 /* WindowSelection.swift */; };
+		BB0000012700000000000001 /* WindowInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000012700000000000010 /* WindowInfoTests.swift */; };
+		BB0000012700000000000002 /* WindowSelectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB0000012700000000000011 /* WindowSelectionTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -91,6 +93,9 @@
 		B32C8D982498E837003562C9 /* String+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Extension.swift"; sourceTree = "<group>"; };
 		AA0000012700000000000001 /* WindowEnumerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowEnumerator.swift; sourceTree = "<group>"; };
 		AA0000012700000000000003 /* WindowSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSelection.swift; sourceTree = "<group>"; };
+		BB0000012700000000000010 /* WindowInfoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowInfoTests.swift; sourceTree = "<group>"; };
+		BB0000012700000000000011 /* WindowSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSelectionTests.swift; sourceTree = "<group>"; };
+		BB0000012700000000000020 /* BlurredTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BlurredTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -113,6 +118,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		BB0000012700000000000030 /* BlurredTests */ = {
+			isa = PBXGroup;
+			children = (
+				BB0000012700000000000010 /* WindowInfoTests.swift */,
+				BB0000012700000000000011 /* WindowSelectionTests.swift */,
+			);
+			path = BlurredTests;
+			sourceTree = "<group>";
+		};
 		0850B62224208EA200717EDE /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -158,6 +172,7 @@
 			children = (
 				08FF678B23A9156A00EACD58 /* Blurred */,
 				0889D10323C4720E00E867FF /* BlurredLauncher */,
+				BB0000012700000000000030 /* BlurredTests */,
 				0889D11223C4738900E867FF /* Frameworks */,
 			);
 			sourceTree = "<group>";
@@ -167,6 +182,7 @@
 			children = (
 				08FF678923A9156A00EACD58 /* Blurred.app */,
 				0889D10223C4720E00E867FF /* BlurredLauncher.app */,
+				BB0000012700000000000020 /* BlurredTests.xctest */,
 			);
 			name = Products;
 			path = ..;
@@ -259,7 +275,42 @@
 			productReference = 08FF678923A9156A00EACD58 /* Blurred.app */;
 			productType = "com.apple.product-type.application";
 		};
+		BB0000012700000000000050 /* BlurredTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BB0000012700000000000060 /* Build configuration list for PBXNativeTarget "BlurredTests" */;
+			buildPhases = (
+				BB0000012700000000000051 /* Sources */,
+				BB0000012700000000000052 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BB0000012700000000000041 /* PBXTargetDependency */,
+			);
+			name = BlurredTests;
+			productName = BlurredTests;
+			productReference = BB0000012700000000000020 /* BlurredTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
+
+/* Begin PBXContainerItemProxy section */
+		BB0000012700000000000040 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 08FF678123A9156A00EACD58 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 08FF678823A9156A00EACD58;
+			remoteInfo = Blurred;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		BB0000012700000000000041 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 08FF678823A9156A00EACD58 /* Blurred */;
+			targetProxy = BB0000012700000000000040 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXProject section */
 		08FF678123A9156A00EACD58 /* Project object */ = {
@@ -274,6 +325,10 @@
 					};
 					08FF678823A9156A00EACD58 = {
 						CreatedOnToolsVersion = 11.3;
+					};
+					BB0000012700000000000050 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = 08FF678823A9156A00EACD58;
 					};
 				};
 			};
@@ -296,6 +351,7 @@
 			targets = (
 				08FF678823A9156A00EACD58 /* Blurred */,
 				0889D10123C4720E00E867FF /* BlurredLauncher */,
+				BB0000012700000000000050 /* BlurredTests */,
 			);
 		};
 /* End PBXProject section */
@@ -360,6 +416,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin BlurredTests Build Phases */
+		BB0000012700000000000051 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB0000012700000000000001 /* WindowInfoTests.swift in Sources */,
+				BB0000012700000000000002 /* WindowSelectionTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BB0000012700000000000052 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End BlurredTests Build Phases */
 
 /* Begin PBXVariantGroup section */
 		0889D10A23C4721100E867FF /* Main.storyboard */ = {
@@ -604,6 +679,49 @@
 		};
 /* End XCBuildConfiguration section */
 
+/* Begin BlurredTests XCBuildConfiguration section */
+		BB0000012700000000000061 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = foundation.dwarves.BlurredTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Blurred.app/Contents/MacOS/Blurred";
+			};
+			name = Debug;
+		};
+		BB0000012700000000000062 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = foundation.dwarves.BlurredTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Blurred.app/Contents/MacOS/Blurred";
+			};
+			name = Release;
+		};
+/* End BlurredTests XCBuildConfiguration section */
+
 /* Begin XCConfigurationList section */
 		0889D11123C4721100E867FF /* Build configuration list for PBXNativeTarget "BlurredLauncher" */ = {
 			isa = XCConfigurationList;
@@ -633,6 +751,18 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin BlurredTests XCConfigurationList section */
+		BB0000012700000000000060 /* Build configuration list for PBXNativeTarget "BlurredTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BB0000012700000000000061 /* Debug */,
+				BB0000012700000000000062 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End BlurredTests XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
 		0851749F23FD2E9700B3B84F /* XCRemoteSwiftPackageReference "HotKey" */ = {
