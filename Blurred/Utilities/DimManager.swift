@@ -47,10 +47,6 @@ class DimManager: ObservableObject {
             guard let self = self else { return }
 
             self.hasScreenRecordingPermission = CGPreflightScreenCaptureAccess()
-            guard self.hasScreenRecordingPermission else {
-                self.removeAllOverlay()
-                return
-            }
 
             let windowInfos = self.windowEnumerator.getOnScreenWindows()
             let screens = NSScreen.screens

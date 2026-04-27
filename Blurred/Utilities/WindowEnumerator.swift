@@ -16,7 +16,6 @@ protocol WindowEnumerator {
 
 final class CGWindowEnumerator: WindowEnumerator {
     func getOnScreenWindows() -> [WindowInfo] {
-        guard CGPreflightScreenCaptureAccess() else { return [] }
         let options = CGWindowListOption([.excludeDesktopElements, .optionOnScreenOnly])
         let list = CGWindowListCopyWindowInfo(options, CGWindowID(0)) as? [[String: Any]] ?? []
         // Layer 0 = normal window level; excludes menus, tooltips, and floating panels.
