@@ -71,8 +71,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func checkScreenRecordingPermission() {
-        if !CGPreflightScreenCaptureAccess() {
+        if !CGPreflightScreenCaptureAccess(),
+           !UserDefaults.standard.bool(forKey: "hasRequestedScreenRecording") {
             CGRequestScreenCaptureAccess()
+            UserDefaults.standard.set(true, forKey: "hasRequestedScreenRecording")
         }
     }
 
