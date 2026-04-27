@@ -15,52 +15,109 @@ enum DimMode: Int {
     case parallel
 }
 
-class DimManager {
+class DimManager: ObservableObject {
     //MARK: - Variable(s)
     static let sharedInstance = DimManager()
     let setting = SettingObservable()
-    
-    private var windows: [NSWindow] = []
+
+    @Published private(set) var hasScreenRecordingPermission: Bool = false
+
+    private(set) var windowEnumerator: WindowEnumerator = CGWindowEnumerator()
+    private var overlayWindows: [CGDirectDisplayID: NSWindow] = [:]
+    private var pendingDimWork: DispatchWorkItem?
     private var cancellableSet: Set<AnyCancellable> = []
-    
-    
+
     //MARK: - Init
     private init() {
+        self.hasScreenRecordingPermission = CGPreflightScreenCaptureAccess()
         self.observerActiveWindowChanged()
         self.observeSettingChanged()
     }
-    
+
     func dim(runningApplication: NSRunningApplication?, withDelay: Bool = true) {
-        
-        guard DimManager.sharedInstance.setting.isEnabled else {
+        pendingDimWork?.cancel()
+
+        guard self.setting.isEnabled else {
             self.removeAllOverlay()
             return
         }
-        
-        // Remove dim if user click to desktop
-        // This will also remove dim if user click to finder
-        // Improve: Find the other way to check if user click to desktop
-        if let bundle = runningApplication?.bundleIdentifier, bundle == "com.apple.finder" {
-            self.removeAllOverlay()
-            return
+
+        let delay: TimeInterval = withDelay ? 0.2 : 0
+        let work = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+
+            self.hasScreenRecordingPermission = CGPreflightScreenCaptureAccess()
+            guard self.hasScreenRecordingPermission else {
+                self.removeAllOverlay()
+                return
+            }
+
+            let windowInfos = self.windowEnumerator.getOnScreenWindows()
+            let screens = NSScreen.screens
+            let primaryHeight = screens.first?.frame.height ?? 0
+            let color = NSColor.black.withAlphaComponent(CGFloat(self.setting.alpha / 100.0))
+            // Re-read frontmost app at execution time to avoid stale capture across delay
+            let bundleID = runningApplication?.bundleIdentifier
+                ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+
+            // Track which displays are still active
+            var activeDisplayIDs = Set<CGDirectDisplayID>()
+
+            for screen in screens {
+                let displayID = Self.displayID(for: screen)
+                activeDisplayIDs.insert(displayID)
+                let screenFrame = screen.frame
+
+                // Per-screen desktop detection
+                if WindowSelection.isDesktopClick(
+                    bundleIdentifier: bundleID,
+                    windowInfos: windowInfos,
+                    screenFrame: screenFrame,
+                    primaryScreenHeight: primaryHeight
+                ) {
+                    self.overlayWindows[displayID]?.orderOut(nil)
+                    continue
+                }
+
+                let targetWindowNumber: Int
+                switch self.setting.dimMode {
+                case .single:
+                    targetWindowNumber = windowInfos.first?.number ?? 0
+                case .parallel:
+                    targetWindowNumber = WindowSelection.frontmostWindow(
+                        on: screenFrame,
+                        from: windowInfos,
+                        primaryScreenHeight: primaryHeight
+                    ) ?? 0
+                }
+
+                if targetWindowNumber == 0 {
+                    self.overlayWindows[displayID]?.orderOut(nil)
+                    continue
+                }
+
+                let overlay = self.overlayForScreen(screen, displayID: displayID, color: color)
+                overlay.order(.below, relativeTo: targetWindowNumber)
+            }
+
+            // Remove overlays for disconnected screens
+            let staleIDs = self.overlayWindows.keys.filter { !activeDisplayIDs.contains($0) }
+            for id in staleIDs {
+                self.overlayWindows.removeValue(forKey: id)?.orderOut(nil)
+            }
         }
-        
-        let color = NSColor.black.withAlphaComponent(CGFloat(DimManager.sharedInstance.setting.alpha/100.0))
-        
-        DimManager.sharedInstance.windows(color: color, withDelay: withDelay) { [weak self] windows in
-            guard let strongSelf = self else {return}
-            strongSelf.removeAllOverlay()
-            strongSelf.windows = windows
-        }
+
+        pendingDimWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
     }
-    
+
     func toggleDimming(isEnable: Bool) {
         isEnable ? self.dim(runningApplication: self.getFrontMostApplication()) : self.removeAllOverlay()
     }
-    
+
     func adjustDimmingLevel(alpha: Double) {
-        for overlayWindow in self.windows {
-            overlayWindow.backgroundColor = NSColor.black.withAlphaComponent(CGFloat(alpha/100.0))
+        for overlay in overlayWindows.values {
+            overlay.backgroundColor = NSColor.black.withAlphaComponent(CGFloat(alpha / 100.0))
         }
     }
 }
@@ -70,87 +127,59 @@ extension DimManager {
     private func getFrontMostApplication() -> NSRunningApplication? {
         return NSWorkspace.shared.frontmostApplication
     }
-    
-    private func windows(color: NSColor, withDelay: Bool, didCreateWindows: @escaping ([NSWindow])->()) {
-        let delay = withDelay ? 0.2 : 0
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            guard let strongSelf = self else {return}
-            let windowInfos = strongSelf.getWindowInfos()
-            
-            let screens = NSScreen.screens
-            let windows = screens.map { screen in
-                return strongSelf.windowForScreen(screen: screen, windowInfos: windowInfos, color: color)
-            }
-            
-            didCreateWindows(windows)
-        }
+
+    static func displayID(for screen: NSScreen) -> CGDirectDisplayID {
+        return screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID ?? 0
     }
-    
-    private func windowForScreen(screen: NSScreen, windowInfos: [WindowInfo], color: NSColor) -> NSWindow {
-        
-        let frame = NSRect(origin: .zero, size: screen.frame.size)
-        let overlayWindow = NSWindow.init(contentRect: frame, styleMask: .borderless, backing: .buffered, defer: false, screen: screen)
-        overlayWindow.isReleasedWhenClosed = false
-        overlayWindow.animationBehavior = .none
-        overlayWindow.backgroundColor = color
-        overlayWindow.ignoresMouseEvents = true
-        overlayWindow.collectionBehavior = [.transient, .fullScreenNone]
-        overlayWindow.level = .normal
-        
-        var windowNumber = 0
-        switch self.setting.dimMode {
-        case .single:
-            windowNumber = windowInfos[safe: 0]?.number ?? 0
-        case .parallel:
-            // Get frontmost window of each screen
-            let newScreen = NSRect(x: screen.frame.minX, y: NSScreen.screens[0].frame.maxY - screen.frame.maxY, width: screen.frame.width, height: screen.frame.height)
-            let windowInfo = windowInfos.first(where: {
-                return  newScreen.minX <= $0.bounds.midX &&
-                    newScreen.maxX >= $0.bounds.midX &&
-                    newScreen.minY <= $0.bounds.midY &&
-                    newScreen.maxY >= $0.bounds.midY
-            })
-            
-            windowNumber = windowInfo?.number ?? 0
+
+    private func overlayForScreen(_ screen: NSScreen, displayID: CGDirectDisplayID, color: NSColor) -> NSWindow {
+        if let existing = overlayWindows[displayID] {
+            existing.setFrame(screen.frame, display: false)
+            existing.backgroundColor = color
+            return existing
         }
-        
-        overlayWindow.order(.below, relativeTo: windowNumber)
-        return overlayWindow
+
+        let overlay = NSWindow(
+            contentRect: NSRect(origin: .zero, size: screen.frame.size),
+            styleMask: .borderless,
+            backing: .buffered,
+            defer: false,
+            screen: screen
+        )
+        overlay.isReleasedWhenClosed = false
+        overlay.animationBehavior = .none
+        overlay.backgroundColor = color
+        overlay.ignoresMouseEvents = true
+        overlay.collectionBehavior = [.transient, .fullScreenNone]
+        overlay.level = .normal
+        overlay.setFrame(screen.frame, display: false)
+
+        overlayWindows[displayID] = overlay
+        return overlay
     }
-    
+
     private func removeAllOverlay() {
-        for overlayWindow in self.windows {
-            overlayWindow.close()
+        let windows = overlayWindows
+        overlayWindows.removeAll()
+        for (_, window) in windows {
+            window.orderOut(nil)
         }
-        self.windows.removeAll()
-    }
-    
-    /// This func will return the window info of windows on all the screen
-    private func getWindowInfos() -> [WindowInfo] {
-        let options = CGWindowListOption([.excludeDesktopElements, .optionOnScreenOnly])
-        let windowsListInfo = CGWindowListCopyWindowInfo(options, CGWindowID(0))
-        let infoList = windowsListInfo as? [[String: Any]] ?? []
-        let windowInfos = infoList.compactMap { WindowInfo(dict: $0) }.filter { $0.layer == 0 }
-        return windowInfos
     }
 }
 
 extension DimManager {
     private func observeSettingChanged() {
-        
-        // DON'T receive this publisher on Main scheduler
-        // It will cause delay
-        // Still don't know why :-?
         self.setting.$alpha
             .removeDuplicates()
+            .receive(on: DispatchQueue.main)
             .sink(receiveValue: adjustDimmingLevel)
             .store(in: &cancellableSet)
-        
+
         self.setting.$isEnabled
             .receive(on: DispatchQueue.main)
             .sink(receiveValue: toggleDimming)
             .store(in: &cancellableSet)
-        
+
         self.setting.$dimMode
             .receive(on: DispatchQueue.main)
             .sink(receiveValue: { [weak self] _ in
@@ -158,19 +187,18 @@ extension DimManager {
             })
             .store(in: &cancellableSet)
     }
-    
+
     private func observerActiveWindowChanged() {
-        
         let nc = NSWorkspace.shared.notificationCenter
         nc.addObserver(self, selector: #selector(workspaceDidReceiptAppllicatinActiveNotification), name: NSWorkspace.didActivateApplicationNotification, object: nil)
     }
-    
+
     @objc private func workspaceDidReceiptAppllicatinActiveNotification(ntf: Notification) {
         guard
             let activeAppDict = ntf.userInfo as? [AnyHashable : NSRunningApplication],
             let activeApplication = activeAppDict["NSWorkspaceApplicationKey"]
             else { return }
-        
+
         self.dim(runningApplication: activeApplication)
     }
 }
