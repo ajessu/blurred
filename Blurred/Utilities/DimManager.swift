@@ -97,7 +97,11 @@ class DimManager: ObservableObject {
                 }
 
                 let overlay = self.overlayForScreen(screen, displayID: displayID, color: color)
+                // orderOut + order(.below) must be atomic to prevent flicker
+                NSDisableScreenUpdates()
+                overlay.orderOut(nil)
                 overlay.order(.below, relativeTo: targetWindowNumber)
+                NSEnableScreenUpdates()
             }
 
             // Remove overlays for disconnected screens
